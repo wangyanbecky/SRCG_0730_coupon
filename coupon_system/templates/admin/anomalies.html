@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}异常监控{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>🔍 异常监控</h1>
+</div>
+
+<div class="stats-row">
+    <div class="stat-card">
+        <div class="stat-number">{{ total_risks }}</div>
+        <div class="stat-label">总事件</div>
+    </div>
+    <div class="stat-card stat-card-danger">
+        <div class="stat-number">{{ blocked }}</div>
+        <div class="stat-label">已拦截</div>
+    </div>
+    <div class="stat-card stat-card-warning">
+        <div class="stat-number">{{ review }}</div>
+        <div class="stat-label">待审核</div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header"><h2>全部风险事件</h2></div>
+    {% if risks %}
+    <div class="table-wrapper">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>用户</th>
+                    <th>操作</th>
+                    <th>风险评分</th>
+                    <th>决策</th>
+                    <th>原因</th>
+                    <th>时间</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in risks %}
+                <tr class="risk-row risk-{{ r.decision }}">
+                    <td>#{{ r.id }}</td>
+                    <td>{{ r.user.username if r.user else '-' }}</td>
+                    <td>{{ r.action }}</td>
+                    <td>
+                        <span class="risk-score
+                            {% if r.risk_score >= 0.7 %}risk-high
+                            {% elif r.risk_score >= 0.4 %}risk-medium
+                            {% else %}risk-low{% endif %}">
+                            {{ "%.0f"|format(r.risk_score * 100) }}%
+                        </span>
+                    </td>
+                    <td>
+                        <span class="status-badge {{ r.decision }}">
+                            {% if r.decision == 'allow' %}✅ 放行
+                            {% elif r.decision == 'block' %}🚫 拦截
+                            {% elif r.decision == 'review' %}🔍 待审核
+                            {% endif %}
+                        </span>
+                    </td>
+                    <td class="text-sm">{{ r.reason }}</td>
+                    <td class="text-sm">{{ r.created_at.strftime('%m-%d %H:%M:%S') if r.created_at else '' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state"><p>暂无异常事件 🎉</p></div>
+    {% endif %}
+</div>
+{% endblock %}

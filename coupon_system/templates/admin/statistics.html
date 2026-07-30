@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}活动统计{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>📈 活动统计</h1>
+</div>
+
+<div class="card">
+    <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+        <h2>所有活动统计</h2>
+        <div class="sort-controls">
+            <span class="text-sm">排序: </span>
+            <select onchange="window.location.href='?sort=' + this.value + '&order={{ order }}'">
+                <option value="created_at" {% if sort_by == 'created_at' %}selected{% endif %}>创建时间</option>
+                <option value="name" {% if sort_by == 'name' %}selected{% endif %}>名称</option>
+                <option value="amount" {% if sort_by == 'amount' %}selected{% endif %}>面额</option>
+                <option value="stock" {% if sort_by == 'stock' %}selected{% endif %}>剩余库存</option>
+                <option value="end_date" {% if sort_by == 'end_date' %}selected{% endif %}>截止时间</option>
+            </select>
+            <a href="?sort={{ sort_by }}&order={% if order == 'asc' %}desc{% else %}asc{% endif %}"
+               class="btn btn-sm">
+                {% if order == 'asc' %}⬆ 升序{% else %}⬇ 降序{% endif %}
+            </a>
+        </div>
+    </div>
+    {% if campaigns %}
+    <div class="table-wrapper">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>活动名称</th>
+                    <th>面额</th>
+                    <th>初始库存</th>
+                    <th>剩余</th>
+                    <th>开始</th>
+                    <th>截止</th>
+                    <th>状态</th>
+                    <th>领取率</th>
+                    <th>核销率</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in campaigns %}
+                <tr>
+                    <td><strong>{{ c.name }}</strong></td>
+                    <td>¥{{ "%.0f"|format(c.amount) }}</td>
+                    <td>{{ c.initial_stock }}</td>
+                    <td>{{ c.stock }}</td>
+                    <td class="text-sm">{{ c.start_date.strftime('%m-%d') }}</td>
+                    <td class="text-sm">{{ c.end_date.strftime('%m-%d') }}</td>
+                    <td>
+                        <span class="status-badge {{ c.status }}">
+                            {% if c.status == 'active' %}进行中
+                            {% elif c.status == 'draft' %}草稿
+                            {% elif c.status == 'expired' %}已过期
+                            {% else %}{{ c.status }}
+                            {% endif %}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="progress-bar" style="width:80px;display:inline-block;vertical-align:middle;">
+                            <div class="progress-fill" style="width:{{ c.claim_rate }}%"></div>
+                        </div>
+                        {{ c.claim_rate }}%
+                    </td>
+                    <td>{{ c.verify_rate }}%</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state"><p>暂无活动数据</p></div>
+    {% endif %}
+</div>
+{% endblock %}
