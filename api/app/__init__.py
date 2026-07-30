@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from flask import Flask, jsonify, redirect, request, url_for
 
 from api.app.extensions import db, login_manager
+from api.app.observability import configure_observability
 from api.config import Config, STATIC_DIR, TEMPLATE_DIR
 
 
@@ -18,6 +19,7 @@ def create_app(config_class=Config):
 
     db.init_app(app)
     login_manager.init_app(app)
+    configure_observability(app)
 
     @login_manager.unauthorized_handler
     def unauthorized():

@@ -19,3 +19,17 @@
 ## POST /user/claim/<campaign_id> 时间门禁
 
 未来待发布活动继续返回 `campaign_not_started`，前端据此也可触发预约提示；所有时间判断使用服务端时间。
+
+## GET /admin/system/logs
+- 认证：仅 admin。
+- 查询参数：`level` 为 `DEBUG|INFO|WARNING|ERROR|CRITICAL` 白名单；`q` 为最多 100 字符普通关键字；`limit` 默认 50、最大 100。
+- 响应：服务端 HTML；损坏日志行跳过，日志不可用时显示安全错误和空列表。
+
+## GET /admin/system/health
+- 认证：仅 admin。
+- 行为：同步执行本地轻量检查，不进行外部 AI 网络调用。
+- 响应：overall、检查项、checked_at、运行元数据的 HTML 页面。
+
+## GET /admin/system/alerts
+- 认证：仅 admin。
+- 响应：二期规划占位 HTML，无数据写入、轮询或操作端点。

@@ -34,7 +34,7 @@ class AIConfig:
     list_models_timeout: int = 10
     max_tokens: int = 1024
     risk_claim_window_seconds: int = 10
-    risk_max_claims_in_window: int = 50
+    risk_max_claims_in_window: int = 5
 
     def __post_init__(self) -> None:
         if not self.region.strip():
@@ -73,7 +73,7 @@ class AIConfig:
                 "RISK_CLAIM_WINDOW_SECONDS",
             ),
             risk_max_claims_in_window=_as_int(
-                env.get("RISK_MAX_CLAIMS_IN_WINDOW", 50),
+                env.get("RISK_MAX_CLAIMS_IN_WINDOW", 5),
                 "RISK_MAX_CLAIMS_IN_WINDOW",
             ),
         )

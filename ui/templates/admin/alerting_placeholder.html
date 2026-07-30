@@ -1,0 +1,7 @@
+{% extends 'base.html' %}
+{% block title %}异常报警（二期） · CouponFlow{% endblock %}
+{% block content %}
+<header class="page-top"><div><p class="kicker">PHASE 2 ROADMAP</p><h1>异常情况报警</h1><p>为后续系统异常发现、通知与处置闭环预留的稳定入口。</p></div><span class="phase-badge">二期规划 · 当前未启用</span></header>
+<section class="panel alert-placeholder"><div class="alert-placeholder-icon">!</div><p class="kicker">NOT ACTIVE IN PHASE 1</p><h2>一期暂不提供自动报警</h2><p>当前页面不生成告警、不发送通知，也不展示虚构的告警数量或历史。系统运行情况请通过健康状态和运行日志查看。</p><div class="placeholder-actions"><a class="button button-primary" href="{{ url_for('admin_bp.system_health') }}">查看健康状态</a><a class="button" href="{{ url_for('admin_bp.system_logs') }}">查看运行日志</a></div></section>
+<section class="plan-grid"><article class="panel plan-card"><span>01</span><h3>规则与阈值</h3><p>按组件状态、错误率、响应耗时和连续失败配置告警规则。</p><small>二期候选能力</small></article><article class="panel plan-card"><span>02</span><h3>通知渠道</h3><p>预留邮件、企业消息和外部事件平台等通知渠道适配。</p><small>二期候选能力</small></article><article class="panel plan-card"><span>03</span><h3>处置闭环</h3><p>记录触发、确认、处理、恢复和复盘全过程。</p><small>二期候选能力</small></article></section>
+{% endblock %}

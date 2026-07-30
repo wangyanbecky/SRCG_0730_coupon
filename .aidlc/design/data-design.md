@@ -16,3 +16,9 @@
 - 待发布：活动 `status=active` 且 `is_scheduled=true`，有效发布时间晚于服务端当前时间且不晚于活动结束时间。
 - 有效发布时间取 `scheduled_time` 与 `start_date` 中较晚者，避免二者不一致时提前开放。
 - 预约记录不创建 Coupon，不改变 Campaign.stock，不改变 User.points。
+
+## 需求 3 运行日志数据
+- 存储：`api/data/logs/app.log` JSON Lines；轮转文件不进入版本控制。
+- 字段：`timestamp`、`level`、`logger`、`event`、`request_id`、`method`、`endpoint`、`status`、`duration_ms`、`user_id`、`role`、`message`。
+- 禁止字段：请求体、Cookie、Authorization、原始查询字符串、环境变量、数据库 URI、token/secret。
+- 一期不新增数据库表；健康状态在请求时计算，不持久化伪历史。

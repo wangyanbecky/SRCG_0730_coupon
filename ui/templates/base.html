@@ -33,6 +33,9 @@
           <a href="{{ url_for('verifier.history') }}" class="{% if request.endpoint == 'verifier.history' %}active{% endif %}"><span>◷</span>核销记录</a>
         {% elif current_user.role == 'admin' %}
           <a href="{{ url_for('admin_bp.dashboard') }}" class="{% if request.endpoint == 'admin_bp.dashboard' %}active{% endif %}"><span>◈</span>数据驾驶舱</a>
+          <a href="{{ url_for('admin_bp.system_logs') }}" class="{% if request.endpoint == 'admin_bp.system_logs' %}active{% endif %}"><span>▤</span>运行日志</a>
+          <a href="{{ url_for('admin_bp.system_health') }}" class="{% if request.endpoint == 'admin_bp.system_health' %}active{% endif %}"><span>◉</span>健康状态</a>
+          <a href="{{ url_for('admin_bp.system_alerts') }}" class="{% if request.endpoint == 'admin_bp.system_alerts' %}active{% endif %}"><span>!</span>异常报警<small class="nav-phase">二期</small></a>
         {% endif %}
       </nav>
       <div class="sidebar-bottom">

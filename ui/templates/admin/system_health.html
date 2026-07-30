@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block title %}系统健康状态 · CouponFlow{% endblock %}
+{% block content %}
+{% set status_text = {'healthy':'健康','degraded':'降级','unhealthy':'不健康','unknown':'未知'} %}
+<header class="page-top">
+  <div><p class="kicker">SYSTEM HEALTH</p><h1>系统健康状态</h1><p>执行本地轻量检查；AI 项仅展示配置状态，不进行外部联网探测。</p></div>
+  <a class="button button-primary" href="{{ url_for('admin_bp.system_health') }}">刷新检查</a>
+</header>
+<section class="metric-grid">
+  <article class="metric-card health-summary health-{{ health.overall }}"><small>总体状态</small><strong>{{ status_text[health.overall] }}</strong><em>按最严重组件汇总</em></article>
+  <article class="metric-card"><small>运行时长</small><strong class="metric-text">{{ health.uptime }}</strong><em>本应用进程</em></article>
+  <article class="metric-card"><small>健康检查</small><strong>{{ health.healthy_count }}/{{ health.checks|length }}</strong><em>健康组件数量</em></article>
+  <article class="metric-card"><small>检查时间</small><strong class="metric-text">{{ health.checked_at.strftime('%H:%M:%S') }}</strong><em>{{ health.checked_at.strftime('%Y-%m-%d') }} UTC</em></article>
+</section>
+<section class="health-grid">
+  {% for check in health.checks %}<article class="panel health-card"><div class="health-card-head"><span class="health-indicator health-{{ check.status }}"></span><div><small>{{ status_text[check.status] }}</small><h2>{{ check.name }}</h2></div>{% if check.latency_ms is not none %}<code>{{ check.latency_ms }} ms</code>{% else %}<code>未主动探测</code>{% endif %}</div><p>{{ check.detail }}</p></article>{% endfor %}
+</section>
+<section class="panel runtime-panel"><div class="panel-heading"><div><p class="kicker">RUNTIME PROFILE</p><h2>运行环境</h2></div><span class="monitor-note">仅展示安全白名单</span></div><dl class="runtime-grid"><div><dt>应用版本</dt><dd>{{ health.runtime.app_version }}</dd></div><div><dt>运行环境</dt><dd>{{ health.runtime.environment }}</dd></div><div><dt>Python</dt><dd>{{ health.runtime.python }}</dd></div><div><dt>Flask</dt><dd>{{ health.runtime.flask }}</dd></div><div><dt>启动时间</dt><dd>{{ health.runtime.started_at.strftime('%Y-%m-%d %H:%M:%S') }} UTC</dd></div></dl></section>
+{% endblock %}

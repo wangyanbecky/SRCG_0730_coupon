@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}系统运行日志 · CouponFlow{% endblock %}
+{% block content %}
+<header class="page-top">
+  <div><p class="kicker">SYSTEM OBSERVABILITY</p><h1>系统运行日志</h1><p>查看本功能启用后产生的应用请求元数据；敏感请求内容不会被采集。</p></div>
+  <a class="button" href="{{ url_for('admin_bp.system_health') }}">查看健康状态 →</a>
+</header>
+<form class="monitor-filter panel" method="get">
+  <label>日志级别
+    <select name="level"><option value="">全部级别</option>{% for level in log_levels %}<option value="{{ level }}" {% if selected_level == level %}selected{% endif %}>{{ level }}</option>{% endfor %}</select>
+  </label>
+  <label class="monitor-query">关键字
+    <input name="q" value="{{ query }}" maxlength="100" placeholder="端点、请求 ID、角色或状态码">
+  </label>
+  <label>显示条数
+    <select name="limit">{% for value in limit_options %}<option value="{{ value }}" {% if limit == value %}selected{% endif %}>最新 {{ value }} 条</option>{% endfor %}</select>
+  </label>
+  <button class="button button-primary" type="submit">筛选</button>
+  {% if selected_level or query %}<a class="button" href="{{ url_for('admin_bp.system_logs', limit=limit) }}">清除</a>{% endif %}
+</form>
+<section class="panel monitor-panel">
+  <div class="panel-heading"><div><p class="kicker">APPLICATION LOG</p><h2>近期请求 <span class="count-chip">{{ entries|length }}</span></h2></div><span class="monitor-note">仅当前轮转文件 · 最新优先</span></div>
+  {% if log_error %}<div class="monitor-warning">{{ log_error }}</div>{% endif %}
+  {% if entries %}
+  <div class="monitor-table-shell"><table class="monitor-table"><thead><tr><th>时间 / 级别</th><th>请求</th><th>端点</th><th>状态 / 耗时</th><th>用户</th><th>请求 ID</th></tr></thead><tbody>
+    {% for log in entries %}<tr><td><time>{{ log.timestamp|default('-')|replace('T', ' ')|truncate(24, True, '') }}</time><span class="log-level level-{{ log.level|lower }}">{{ log.level }}</span></td><td><strong>{{ log.method|default('-') }}</strong><small>{{ log.event|default('request_completed') }}</small></td><td><code>{{ log.endpoint|default('-') }}</code><small>{{ log.message|default('') }}</small></td><td><strong>{{ log.status|default('-') }}</strong><small>{{ log.duration_ms|default('-') }} ms</small></td><td><strong>{{ log.role|default('anonymous') }}</strong><small>ID {{ log.user_id|default('-') }}</small></td><td><code title="{{ log.request_id|default('') }}">{{ log.request_id|default('-')|truncate(14, True, '…') }}</code></td></tr>{% endfor %}
+  </tbody></table></div>
+  {% else %}<div class="empty-state small"><span>▤</span><h3>暂无匹配日志</h3><p>{% if selected_level or query %}请调整筛选条件。{% else %}应用处理新的请求后，日志会显示在这里。{% endif %}</p></div>{% endif %}
+</section>
+{% endblock %}
