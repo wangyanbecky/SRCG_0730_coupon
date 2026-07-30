@@ -1,0 +1,4 @@
+interface:
+  display_name: "Demo Dev UI Builder"
+  short_description: "Build Next.js developer testing dashboards"
+  default_prompt: "Use $demo-dev-ui-builder to scaffold a Next.js developer test and monitoring UI with AWS Identity Center SSO."

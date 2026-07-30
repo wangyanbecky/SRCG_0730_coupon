@@ -1,0 +1,20 @@
+{
+  "endpoints": {
+    "apiBaseUrl": "http://localhost:8080",
+    "healthUrl": "http://localhost:8080/health",
+    "queryUrl": "http://localhost:8080/query",
+    "testSessionUrl": "http://localhost:8080/test/session",
+    "tokenRotationUrl": ""
+  },
+  "runtime": {
+    "pollingIntervalMs": 10000,
+    "requestTimeoutMs": 15000,
+    "maxLogEntries": 500,
+    "largeRequestThresholdKb": 512
+  },
+  "features": {
+    "debugLogging": true,
+    "mockMode": false,
+    "autoReconnect": true
+  }
+}

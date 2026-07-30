@@ -1,0 +1,4 @@
+interface:
+  display_name: "AWS Remote Deploy"
+  short_description: "Local IDE to remote AWS deployment workflows"
+  default_prompt: "Use $aws-remote-deploy to create AWS deployment scripts, token checks, docs, and local client tests for this project."

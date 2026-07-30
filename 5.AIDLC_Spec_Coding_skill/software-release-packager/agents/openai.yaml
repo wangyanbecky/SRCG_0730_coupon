@@ -1,0 +1,4 @@
+interface:
+  display_name: "Software Release Packager"
+  short_description: "Package and publish clean software releases"
+  default_prompt: "Use $software-release-packager to verify consistency, create an isolated release package, and publish locally or to GitHub."

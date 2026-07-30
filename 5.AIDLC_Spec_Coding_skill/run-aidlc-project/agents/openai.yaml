@@ -1,0 +1,4 @@
+interface:
+  display_name: "AIDLC 五步项目交付"
+  short_description: "按 AIDLC 五阶段推进、恢复并验证完整软件项目交付"
+  default_prompt: "Use $run-aidlc-project to continue my project from the current AIDLC stage."

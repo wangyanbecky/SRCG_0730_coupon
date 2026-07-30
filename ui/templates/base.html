@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}优惠券发放与核销中心{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="{{ url_for('auth.index') }}">
+        <span class="brand-mark">✦</span>
+        <span><strong>Coupon<span>Flow</span></strong><small>发放与核销中心</small></span>
+      </a>
+      {% if current_user.is_authenticated %}
+      <div class="side-label">工作台</div>
+      <nav class="side-nav">
+        {% if current_user.role == 'operator' %}
+          <a href="{{ url_for('operator.dashboard') }}" class="{% if request.endpoint == 'operator.dashboard' %}active{% endif %}"><span>▦</span>活动总览</a>
+          <a href="{{ url_for('operator.risk_logs') }}" class="{% if request.endpoint == 'operator.risk_logs' %}active{% endif %}"><span>⌁</span>风控审核{% if pending_risks is defined and pending_risks %}<b class="nav-badge">{{ pending_risks }}</b>{% endif %}</a>
+          <a href="{{ url_for('operator.notifications') }}" class="{% if request.endpoint == 'operator.notifications' %}active{% endif %}"><span>◌</span>广播通知</a>
+        {% elif current_user.role == 'user' %}
+          <a href="{{ url_for('user_bp.dashboard') }}" class="{% if request.endpoint == 'user_bp.dashboard' %}active{% endif %}"><span>⌂</span>发现优惠</a>
+          <a href="{{ url_for('user_bp.my_coupons') }}" class="{% if request.endpoint == 'user_bp.my_coupons' %}active{% endif %}"><span>▤</span>我的优惠券</a>
+          <a href="{{ url_for('user_bp.profile') }}" class="{% if request.endpoint == 'user_bp.profile' %}active{% endif %}"><span>◎</span>个人资料</a>
+        {% elif current_user.role == 'verifier' %}
+          <a href="{{ url_for('verifier.dashboard') }}" class="{% if request.endpoint == 'verifier.dashboard' %}active{% endif %}"><span>⌕</span>现场核销</a>
+          <a href="{{ url_for('verifier.history') }}" class="{% if request.endpoint == 'verifier.history' %}active{% endif %}"><span>◷</span>核销记录</a>
+        {% elif current_user.role == 'admin' %}
+          <a href="{{ url_for('admin_bp.dashboard') }}" class="{% if request.endpoint == 'admin_bp.dashboard' %}active{% endif %}"><span>◈</span>数据驾驶舱</a>
+        {% endif %}
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="local-status"><i class="status-dot {{ 'connected' if ai_status.connected else 'fallback' }}"></i><span>{% if ai_status.connected %}{{ ai_status.label }} 已连接<small>{{ ai_status.model }} · {{ ai_status.region }}</small>{% else %}本地服务运行中<small>AI 规则降级已启用</small>{% endif %}</span></div>
+        <div class="profile-mini"><span class="avatar">{{ current_user.username[:1].upper() }}</span><span><strong>{{ current_user.username }}</strong><small>{{ {'operator':'运营人员','user':'普通用户','verifier':'核销人员','admin':'管理员'}[current_user.role] }}</small></span><a href="{{ url_for('auth.logout') }}" title="退出登录">↪</a></div>
+      </div>
+      {% endif %}
+    </aside>
+    <main class="main-content">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}<div class="flash-stack">{% for category, message in messages %}<div class="flash {{ category }}"><span>{{ '✓' if category == 'success' else '!' }}</span>{{ message }}</div>{% endfor %}</div>{% endif %}
+      {% endwith %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

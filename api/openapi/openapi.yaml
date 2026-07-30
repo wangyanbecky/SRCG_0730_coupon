@@ -1,0 +1,375 @@
+openapi: 3.0.3
+info:
+  title: Coupon System API
+  version: 1.0.0
+  description: Versioned JSON API used by the separated UI.
+servers:
+  - url: /api/v1
+paths:
+  /health:
+    get:
+      summary: Check API and AI provider status
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+  /auth/login:
+    post:
+      summary: Sign in and create a session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/UserSuccess'
+        '401':
+          $ref: '#/components/responses/Error'
+  /auth/register:
+    post:
+      summary: Register a coupon user and create a session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          $ref: '#/components/responses/UserSuccess'
+        '400':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+  /auth/logout:
+    post:
+      summary: End the current session
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          $ref: '#/components/responses/EmptySuccess'
+        '401':
+          $ref: '#/components/responses/Error'
+  /auth/me:
+    get:
+      summary: Return the signed-in user
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          $ref: '#/components/responses/UserSuccess'
+        '401':
+          $ref: '#/components/responses/Error'
+  /campaigns:
+    get:
+      summary: List campaigns currently open for claiming
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: Claimable campaigns
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Campaign'
+        '401':
+          $ref: '#/components/responses/Error'
+  /campaigns/{campaignId}/claim:
+    post:
+      summary: Atomically claim one coupon
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: campaignId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Coupon claimed
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ClaimResult'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+  /users/me/coupons:
+    get:
+      summary: List coupons owned by the signed-in user
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: User coupons
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Coupon'
+        '401':
+          $ref: '#/components/responses/Error'
+  /users/me/notifications:
+    get:
+      summary: List broadcasts visible to the signed-in user
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: Audience-filtered notifications
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Notification'
+        '401':
+          $ref: '#/components/responses/Error'
+  /users/me/profile:
+    get:
+      summary: Return the signed-in user profile
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          $ref: '#/components/responses/UserSuccess'
+        '401':
+          $ref: '#/components/responses/Error'
+    put:
+      summary: Update the signed-in user profile
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileUpdate'
+      responses:
+        '200':
+          $ref: '#/components/responses/UserSuccess'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+components:
+  securitySchemes:
+    sessionAuth:
+      type: apiKey
+      in: cookie
+      name: session
+  responses:
+    EmptySuccess:
+      description: Operation completed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/SuccessEnvelope'
+    UserSuccess:
+      description: User operation completed
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/SuccessEnvelope'
+              - type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/User'
+    Error:
+      description: Request failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+  schemas:
+    SuccessEnvelope:
+      type: object
+      required: [success, data, message, error]
+      properties:
+        success:
+          type: boolean
+          enum: [true]
+        data:
+          nullable: true
+        message:
+          type: string
+        error:
+          nullable: true
+    ErrorEnvelope:
+      type: object
+      required: [success, data, message, error]
+      properties:
+        success:
+          type: boolean
+          enum: [false]
+        data:
+          nullable: true
+        message:
+          type: string
+        error:
+          type: object
+          required: [type]
+          properties:
+            type:
+              type: string
+    LoginRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+          format: password
+    RegisterRequest:
+      allOf:
+        - $ref: '#/components/schemas/LoginRequest'
+        - $ref: '#/components/schemas/ProfileUpdate'
+    ProfileUpdate:
+      type: object
+      properties:
+        phone:
+          type: string
+        age:
+          type: integer
+          nullable: true
+        gender:
+          type: string
+        hobbies:
+          type: string
+        occupation:
+          type: string
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        role:
+          type: string
+        phone:
+          type: string
+        age:
+          type: integer
+          nullable: true
+        gender:
+          type: string
+        hobbies:
+          type: string
+        occupation:
+          type: string
+        points:
+          type: integer
+        last_login:
+          type: string
+    Campaign:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        amount:
+          type: number
+        stock:
+          type: integer
+        initial_stock:
+          type: integer
+        start_date:
+          type: string
+        end_date:
+          type: string
+        per_user_limit:
+          type: integer
+        description:
+          type: string
+        status:
+          type: string
+        claim_rate:
+          type: number
+        verify_rate:
+          type: number
+        coupon_validity_days:
+          type: integer
+          nullable: true
+    ClaimResult:
+      type: object
+      required: [coupon_code, reason, stock_left]
+      properties:
+        coupon_code:
+          type: string
+        reason:
+          type: string
+        stock_left:
+          type: integer
+    Coupon:
+      type: object
+      properties:
+        id:
+          type: integer
+        campaign_id:
+          type: integer
+        campaign_name:
+          type: string
+        user_id:
+          type: integer
+        code:
+          type: string
+        status:
+          type: string
+        claimed_at:
+          type: string
+        expires_at:
+          type: string
+        verified_at:
+          type: string
+    Notification:
+      type: object
+      properties:
+        id:
+          type: integer
+        message:
+          type: string
+        target_type:
+          type: string
+        created_at:
+          type: string
+        creator:
+          type: string
