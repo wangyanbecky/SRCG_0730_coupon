@@ -26,6 +26,36 @@ class Campaign(db.Model):
 
     creator = db.relationship("User", backref="campaigns_created", foreign_keys=[created_by])
     coupons = db.relationship("Coupon", backref="campaign", lazy="dynamic")
+    reservations = db.relationship(
+        "CampaignReservation",
+        back_populates="campaign",
+        lazy="dynamic",
+        cascade="all, delete-orphan",
+    )
+
+    def release_time(self):
+        """Return the effective time when a scheduled campaign can be claimed."""
+        if not self.is_scheduled:
+            return None
+        candidates = [
+            value for value in (self.scheduled_time, self.start_date) if value is not None
+        ]
+        return max(candidates) if candidates else None
+
+    def is_pending_release_at(self, now=None):
+        """Whether an active campaign is valid and waiting for scheduled release."""
+        now = now or datetime.now()
+        release_time = self.release_time()
+        return (
+            self.status == "active"
+            and self.is_scheduled
+            and release_time is not None
+            and now < release_time <= self.end_date
+        )
+
+    def display_status_at(self, now=None):
+        """Map a future scheduled campaign to the existing draft visual state."""
+        return "draft" if self.is_pending_release_at(now) else self.status
 
     @property
     def claim_rate(self):

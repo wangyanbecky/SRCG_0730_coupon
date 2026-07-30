@@ -3,6 +3,7 @@
 from api.app.services.ai_gateway import AIGateway, ai_gateway
 from api.app.services.coupon_service import ClaimError, CouponService
 from api.app.services.notification_service import NotificationService
+from api.app.services.reservation_service import ReservationError, ReservationService
 
 __all__ = [
     "AIGateway",
@@ -10,4 +11,6 @@ __all__ = [
     "ClaimError",
     "CouponService",
     "NotificationService",
+    "ReservationError",
+    "ReservationService",
 ]

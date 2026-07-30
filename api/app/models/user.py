@@ -27,6 +27,12 @@ class User(UserMixin, db.Model):
     coupons = db.relationship(
         "Coupon", backref="owner", lazy="dynamic", foreign_keys="Coupon.user_id"
     )
+    campaign_reservations = db.relationship(
+        "CampaignReservation",
+        back_populates="user",
+        lazy="dynamic",
+        cascade="all, delete-orphan",
+    )
 
     @property
     def password(self):

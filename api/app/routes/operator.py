@@ -23,10 +23,35 @@ def before_request():
 
 @operator_bp.route("/dashboard")
 def dashboard():
-    campaigns = Campaign.query.order_by(Campaign.created_at.desc()).all()
-    active_count = sum(1 for campaign in campaigns if campaign.status == "active")
-    draft_count = sum(1 for campaign in campaigns if campaign.status == "draft")
-    total_stock = sum(campaign.stock for campaign in campaigns)
+    now = datetime.now()
+    search_query = request.args.get("q", "").strip()
+    sort_order = request.args.get("sort", "title_asc")
+    if sort_order not in {"title_asc", "title_desc"}:
+        sort_order = "title_asc"
+
+    all_campaigns = Campaign.query.all()
+    campaign_query = Campaign.query
+    if search_query:
+        campaign_query = campaign_query.filter(
+            Campaign.name.ilike(f"%{search_query}%")
+        )
+
+    title_order = (
+        Campaign.name.desc() if sort_order == "title_desc" else Campaign.name.asc()
+    )
+    campaigns = campaign_query.order_by(title_order, Campaign.id.asc()).all()
+
+    active_count = sum(
+        1
+        for campaign in all_campaigns
+        if campaign.display_status_at(now) == "active"
+    )
+    draft_count = sum(
+        1
+        for campaign in all_campaigns
+        if campaign.display_status_at(now) == "draft"
+    )
+    total_stock = sum(campaign.stock for campaign in all_campaigns)
     pending_risks = RiskLog.query.filter_by(decision="review").count()
     return render_template(
         "operator/dashboard.html",
@@ -35,6 +60,9 @@ def dashboard():
         draft_count=draft_count,
         total_stock=total_stock,
         pending_risks=pending_risks,
+        search_query=search_query,
+        sort_order=sort_order,
+        now=now,
     )
 
 

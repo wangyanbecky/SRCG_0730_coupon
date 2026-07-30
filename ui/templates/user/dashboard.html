@@ -1,1 +1,70 @@
-{% extends 'base.html' %}{% block title %}发现优惠 · CouponFlow{% endblock %}{% block content %}<header class="page-top user-welcome"><div><p class="kicker">GOOD MORNING, {{ current_user.username|upper }}</p><h1>今天，想省下哪一笔？</h1><p>根据你的兴趣和优惠时效，为你排好了最值得领取的券。</p></div><div class="points-badge"><span>✦</span><strong>{{ current_user.points }}</strong><small>我的积分</small></div></header>{% if broadcasts %}<section class="broadcast-strip"><span>◉</span><div><strong>运营广播</strong><p>{{ broadcasts[0].message }}</p></div><small>{{ broadcasts[0].created_at.strftime('%m月%d日') }}</small></section>{% endif %}{% if near_expiry %}<section class="expiry-alert"><span>!</span><div><strong>有 {{ near_expiry|length }} 张券即将到期</strong><small>别让已领取的优惠悄悄过期，今天就用掉它。</small></div><a href="{{ url_for('user_bp.my_coupons') }}">去查看 →</a></section>{% endif %}{% if ai_picks %}<div class="section-bar"><div><p class="kicker">AI CURATED FOR YOU</p><h2>为你推荐 <span class="count-chip">{{ ai_picks|length }}</span></h2></div><span class="ai-label">✦ AI 推荐 · {% if ai_status.connected %}{{ ai_status.label }}{% else %}规则引擎在线{% endif %}</span></div><section class="coupon-grid user-coupon-grid">{% for rec in ai_picks %}{% set c = rec.campaign %}{% set is_maxed = rec.is_maxed %}{% set user_claimed = rec.user_claimed %}{% set is_gone = (c.stock == 0) %}<article class="offer-card{{ ' offer-exhausted' if is_maxed or is_gone else '' }}"><div class="offer-top">{% if is_maxed %}<span class="offer-tag maxed-badge">已领 {{ user_claimed }}/{{ c.per_user_limit }}</span>{% elif is_gone %}<span class="offer-tag maxed-badge">已抢光</span>{% elif c.stock <= 5 %}<span class="offer-tag">仅剩 {{ c.stock }} 张</span>{% else %}<span class="offer-tag">限时可领</span>{% endif %}<span class="offer-score">匹配 {{ '%.0f'|format(rec.score * 100) }}%</span></div><div class="offer-amount"><small>¥</small><strong>{{ '%.0f'|format(c.amount) }}</strong><span>优惠券</span></div><h3>{{ c.name }}</h3><p>{{ c.description }}</p><div class="ai-reason"><span>✦</span><div><small>为什么推荐给你</small><strong>{{ rec.reason }}</strong></div></div><div class="offer-footer"><span>有效至 {{ c.end_date.strftime('%m月%d日') }} · 每人限领 {{ c.per_user_limit }} 张</span><button class="button button-primary claim-button" data-campaign-id="{{ c.id }}">{% if is_maxed %}已领 {{ user_claimed }}/{{ c.per_user_limit }}{% elif is_gone %}已抢光{% else %}立即领取{% endif %}</button></div></article>{% endfor %}</section>{% endif %}{% if other_campaigns %}<div class="section-bar"><div><p class="kicker">ALL COUPONS</p><h2>全部优惠券 <span class="count-chip">{{ other_campaigns|length }}</span></h2></div></div><section class="coupon-grid user-coupon-grid">{% for rec in other_campaigns %}{% set c = rec.campaign %}{% set is_maxed = rec.is_maxed %}{% set user_claimed = rec.user_claimed %}{% set is_gone = (c.stock == 0) %}<article class="offer-card{{ ' offer-exhausted' if is_maxed or is_gone else '' }}"><div class="offer-top">{% if is_maxed %}<span class="offer-tag maxed-badge">已领 {{ user_claimed }}/{{ c.per_user_limit }}</span>{% elif is_gone %}<span class="offer-tag maxed-badge">已抢光</span>{% elif c.stock <= 5 %}<span class="offer-tag">仅剩 {{ c.stock }} 张</span>{% else %}<span class="offer-tag">限时可领</span>{% endif %}</div><div class="offer-amount"><small>¥</small><strong>{{ '%.0f'|format(c.amount) }}</strong><span>优惠券</span></div><h3>{{ c.name }}</h3><p>{{ c.description }}</p><div class="offer-footer"><span>有效至 {{ c.end_date.strftime('%m月%d日') }} · 每人限领 {{ c.per_user_limit }} 张</span><button class="button button-primary claim-button" data-campaign-id="{{ c.id }}">{% if is_maxed %}已领 {{ user_claimed }}/{{ c.per_user_limit }}{% elif is_gone %}已抢光{% else %}立即领取{% endif %}</button></div></article>{% endfor %}</section>{% endif %}{% if not ai_picks and not other_campaigns %}<div class="empty-state"><span>✦</span><h3>暂时没有可领取的优惠券</h3><p>新的活动很快就会到来，记得关注广播。</p></div>{% endif %}<div id="limit-dialog" class="dialog-overlay" style="display:none" onclick="if(event.target===this)this.style.display='none'"><div class="dialog-box"><div class="dialog-icon">!</div><h3 id="dialog-title">提示</h3><p id="dialog-msg"></p><button class="button button-primary" onclick="document.getElementById('limit-dialog').style.display='none'">知道了</button></div></div>{% endblock %}{% block scripts %}<script>function showClaimDialog(msg,title){var d=document.getElementById('limit-dialog');document.getElementById('dialog-title').textContent=title||'提示';document.getElementById('dialog-msg').textContent=msg||'无法领取该优惠券。';d.style.display='flex'}document.querySelectorAll('.claim-button').forEach(function(button){button.addEventListener('click',async function(){button.disabled=true;var origText=button.textContent;button.textContent='领取中…';try{var r=await fetch('/user/claim/'+button.dataset.campaignId,{method:'POST'});var data=await r.json();if(!data.success){if(data.error_type==='limit_exceeded'){showClaimDialog(data.message,'领取已达上限');button.disabled=false;button.textContent=origText;return}if(data.error_type==='out_of_stock'){showClaimDialog(data.message,'库存不足');button.disabled=false;button.textContent=origText;return}showToast(data.message,'error');button.disabled=false;button.textContent=origText;return}showToast(data.message,'success');button.textContent='已领取 ✓';button.classList.remove('button-primary');button.classList.add('button-success');setTimeout(function(){location.reload()},800)}catch(e){showToast('网络异常，请稍后再试','error');button.disabled=false;button.textContent=origText}})});</script>{% endblock %}
+{% extends 'base.html' %}
+{% block title %}发现优惠 · CouponFlow{% endblock %}
+{% macro offer_card(rec, show_score=false) -%}
+{% set c = rec.campaign %}
+{% set is_maxed = rec.is_maxed %}
+{% set user_claimed = rec.user_claimed %}
+{% set is_gone = (c.stock == 0) %}
+{% set is_pending = rec.is_pending %}
+{% set is_reserved = rec.is_reserved %}
+<article class="offer-card{{ ' offer-exhausted' if is_maxed or is_gone else '' }}{{ ' has-reservation' if is_reserved else '' }}">
+  {% if is_reserved %}<span class="reservation-bookmark" title="已收藏" aria-label="已收藏">★</span>{% endif %}
+  <div class="offer-top">
+    {% if is_pending %}<span class="offer-tag pending-badge">待发布</span>
+    {% elif is_maxed %}<span class="offer-tag maxed-badge">已领 {{ user_claimed }}/{{ c.per_user_limit }}</span>
+    {% elif is_gone %}<span class="offer-tag maxed-badge">已抢光</span>
+    {% elif c.stock <= 5 %}<span class="offer-tag">仅剩 {{ c.stock }} 张</span>
+    {% else %}<span class="offer-tag">限时可领</span>{% endif %}
+    {% if show_score %}<span class="offer-score">匹配 {{ '%.0f'|format(rec.score * 100) }}%</span>{% endif %}
+  </div>
+  <div class="offer-amount"><small>¥</small><strong>{{ '%.0f'|format(c.amount) }}</strong><span>优惠券</span></div>
+  <h3>{{ c.name }}</h3>
+  <p>{{ c.description }}</p>
+  {% if show_score %}<div class="ai-reason"><span>✦</span><div><small>为什么推荐给你</small><strong>{{ rec.reason }}</strong></div></div>{% endif %}
+  <div class="offer-footer">
+    {% if is_pending %}<span class="pending-start">领取开始 {{ c.release_time().strftime('%m月%d日 %H:%M') }}</span>
+    {% else %}<span>有效至 {{ c.end_date.strftime('%m月%d日') }} · 每人限领 {{ c.per_user_limit }} 张</span>{% endif %}
+    <button class="button button-primary claim-button"
+            data-campaign-id="{{ c.id }}"
+            data-pending="{{ 'true' if is_pending else 'false' }}"
+            data-start-time="{{ c.release_time().strftime('%m月%d日 %H:%M') if is_pending else '' }}"
+            {% if is_pending and is_reserved %}disabled{% endif %}>
+      {% if is_pending and is_reserved %}已预约{% elif is_maxed %}已领 {{ user_claimed }}/{{ c.per_user_limit }}{% elif is_gone %}已抢光{% else %}立即领取{% endif %}
+    </button>
+  </div>
+</article>
+{%- endmacro %}
+{% block content %}
+<header class="page-top user-welcome">
+  <div><p class="kicker">GOOD MORNING, {{ current_user.username|upper }}</p><h1>今天，想省下哪一笔？</h1><p>根据你的兴趣和优惠时效，为你排好了最值得领取的券。</p></div>
+  <div class="points-badge"><span>✦</span><strong>{{ current_user.points }}</strong><small>我的积分</small></div>
+</header>
+{% if broadcasts %}<section class="broadcast-strip"><span>◉</span><div><strong>运营广播</strong><p>{{ broadcasts[0].message }}</p></div><small>{{ broadcasts[0].created_at.strftime('%m月%d日') }}</small></section>{% endif %}
+{% if near_expiry %}<section class="expiry-alert"><span>!</span><div><strong>有 {{ near_expiry|length }} 张券即将到期</strong><small>别让已领取的优惠悄悄过期，今天就用掉它。</small></div><a href="{{ url_for('user_bp.my_coupons') }}">去查看 →</a></section>{% endif %}
+{% if ai_picks %}
+<div class="section-bar"><div><p class="kicker">AI CURATED FOR YOU</p><h2>为你推荐 <span class="count-chip">{{ ai_picks|length }}</span></h2></div><span class="ai-label">✦ AI 推荐 · {% if ai_status.connected %}{{ ai_status.label }}{% else %}规则引擎在线{% endif %}</span></div>
+<section class="coupon-grid user-coupon-grid">{% for rec in ai_picks %}{{ offer_card(rec, true) }}{% endfor %}</section>
+{% endif %}
+{% if other_campaigns %}
+<div class="section-bar"><div><p class="kicker">ALL COUPONS</p><h2>全部优惠券 <span class="count-chip">{{ other_campaigns|length }}</span></h2></div></div>
+<section class="coupon-grid user-coupon-grid">{% for rec in other_campaigns %}{{ offer_card(rec) }}{% endfor %}</section>
+{% endif %}
+{% if not ai_picks and not other_campaigns %}<div class="empty-state"><span>✦</span><h3>暂时没有可领取或预约的优惠券</h3><p>新的活动很快就会到来，记得关注广播。</p></div>{% endif %}
+<div id="limit-dialog" class="dialog-overlay" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+  <div class="dialog-box"><div class="dialog-icon">!</div><h3 id="dialog-title">提示</h3><p id="dialog-msg"></p><button class="button button-primary" onclick="document.getElementById('limit-dialog').style.display='none'">知道了</button></div>
+</div>
+<div id="reservation-dialog" class="dialog-overlay" style="display:none" onclick="if(event.target===this)closeReservationDialog()">
+  <div class="dialog-box"><div class="dialog-icon reservation-dialog-icon">★</div><h3>未到领取时间</h3><p id="reservation-dialog-msg">未到领取时间，是否预约？</p><div class="dialog-actions"><button class="button" type="button" onclick="closeReservationDialog()">取消</button><button id="reservation-confirm" class="button button-primary" type="button">预约</button></div></div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+var pendingReservationButton = null;
+function showClaimDialog(msg,title){var d=document.getElementById('limit-dialog');document.getElementById('dialog-title').textContent=title||'提示';document.getElementById('dialog-msg').textContent=msg||'无法领取该优惠券。';d.style.display='flex'}
+function openReservationDialog(button){pendingReservationButton=button;var startTime=button.dataset.startTime;document.getElementById('reservation-dialog-msg').textContent='未到领取时间'+(startTime?'（'+startTime+' 开始）':'')+'，是否预约？';document.getElementById('reservation-dialog').style.display='flex'}
+function closeReservationDialog(){document.getElementById('reservation-dialog').style.display='none';pendingReservationButton=null}
+function markReserved(button){var card=button.closest('.offer-card');card.classList.add('has-reservation');if(!card.querySelector('.reservation-bookmark')){var mark=document.createElement('span');mark.className='reservation-bookmark';mark.title='已收藏';mark.setAttribute('aria-label','已收藏');mark.textContent='★';card.appendChild(mark)}button.textContent='已预约';button.disabled=true}
+document.getElementById('reservation-confirm').addEventListener('click',async function(){var confirmButton=this;var sourceButton=pendingReservationButton;if(!sourceButton)return;confirmButton.disabled=true;confirmButton.textContent='预约中…';try{var r=await fetch('/user/reserve/'+sourceButton.dataset.campaignId,{method:'POST'});var data=await r.json();if(!data.success){showToast(data.message||'预约失败，请稍后再试','error');closeReservationDialog();return}markReserved(sourceButton);closeReservationDialog();showToast(data.message,'success')}catch(e){showToast('网络异常，请稍后再试','error')}finally{confirmButton.disabled=false;confirmButton.textContent='预约'}});
+document.querySelectorAll('.claim-button').forEach(function(button){button.addEventListener('click',async function(){if(button.dataset.pending==='true'){openReservationDialog(button);return}button.disabled=true;var origText=button.textContent;button.textContent='领取中…';try{var r=await fetch('/user/claim/'+button.dataset.campaignId,{method:'POST'});var data=await r.json();if(!data.success){if(data.error_type==='campaign_not_started'){button.disabled=false;button.textContent=origText;openReservationDialog(button);return}if(data.error_type==='limit_exceeded'){showClaimDialog(data.message,'领取已达上限');button.disabled=false;button.textContent=origText;return}if(data.error_type==='out_of_stock'){showClaimDialog(data.message,'库存不足');button.disabled=false;button.textContent=origText;return}showToast(data.message,'error');button.disabled=false;button.textContent=origText;return}showToast(data.message,'success');button.textContent='已领取 ✓';button.classList.remove('button-primary');button.classList.add('button-success');setTimeout(function(){location.reload()},800)}catch(e){showToast('网络异常，请稍后再试','error');button.disabled=false;button.textContent=origText}})});
+</script>
+{% endblock %}

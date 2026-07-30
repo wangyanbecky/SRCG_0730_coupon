@@ -35,6 +35,10 @@ class CouponService:
         return CampaignRepository.list_claimable(now or datetime.now())
 
     @staticmethod
+    def list_user_visible_campaigns(now=None):
+        return CampaignRepository.list_user_visible(now or datetime.now())
+
+    @staticmethod
     def claimed_counts(user_id, campaigns):
         return CouponRepository.counts_for_user(
             user_id,
@@ -62,6 +66,8 @@ class CouponService:
         campaign = CampaignRepository.get(campaign_id)
         if campaign is None:
             raise ClaimError("活动不存在。", "not_found", 404)
+        if campaign.is_pending_release_at(now):
+            raise ClaimError("未到领取时间。", "campaign_not_started")
         if not CampaignRepository.is_released(campaign, now):
             raise ClaimError("该活动未开放领取。", "campaign_unavailable")
         if now < campaign.start_date:

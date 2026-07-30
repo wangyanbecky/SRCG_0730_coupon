@@ -13,12 +13,21 @@ class CampaignRepository:
 
     @staticmethod
     def released_filter(now):
-        return or_(
+        return and_(
             Campaign.status == "active",
-            and_(
-                Campaign.is_scheduled.is_(True),
-                Campaign.scheduled_time.is_not(None),
-                Campaign.scheduled_time <= now,
+            or_(
+                Campaign.is_scheduled.is_(False),
+                Campaign.is_scheduled.is_(None),
+                and_(
+                    Campaign.is_scheduled.is_(True),
+                    or_(
+                        Campaign.scheduled_time <= now,
+                        and_(
+                            Campaign.scheduled_time.is_(None),
+                            Campaign.start_date <= now,
+                        ),
+                    ),
+                ),
             ),
         )
 
@@ -35,12 +44,41 @@ class CampaignRepository:
         )
 
     @classmethod
-    def is_released(cls, campaign, now):
-        return campaign.status == "active" or (
-            campaign.is_scheduled
-            and campaign.scheduled_time is not None
-            and campaign.scheduled_time <= now
+    def list_user_visible(cls, now):
+        future_scheduled = and_(
+            Campaign.status == "active",
+            Campaign.is_scheduled.is_(True),
+            Campaign.start_date <= Campaign.end_date,
+            or_(
+                Campaign.scheduled_time.is_(None),
+                Campaign.scheduled_time <= Campaign.end_date,
+            ),
+            or_(
+                Campaign.scheduled_time > now,
+                Campaign.start_date > now,
+            ),
         )
+        currently_claimable = and_(
+            Campaign.start_date <= now,
+            cls.released_filter(now),
+        )
+        return (
+            Campaign.query.filter(
+                Campaign.end_date >= now,
+                or_(currently_claimable, future_scheduled),
+            )
+            .order_by(Campaign.created_at.desc())
+            .all()
+        )
+
+    @classmethod
+    def is_released(cls, campaign, now):
+        if campaign.status != "active":
+            return False
+        if not campaign.is_scheduled:
+            return True
+        release_time = campaign.release_time()
+        return release_time is not None and release_time <= now
 
     @classmethod
     def decrement_stock(cls, campaign_id, now):

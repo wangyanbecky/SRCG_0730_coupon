@@ -10,6 +10,7 @@ from api.app.security import user_required
 from api.app.services import ai_gateway
 from api.app.services.coupon_service import ClaimError, CouponService
 from api.app.services.notification_service import NotificationService
+from api.app.services.reservation_service import ReservationError, ReservationService
 
 
 user_bp = Blueprint("user_bp", __name__)
@@ -25,17 +26,36 @@ def before_request():
 @user_bp.route("/dashboard")
 def dashboard():
     now = datetime.now()
-    active_campaigns = CouponService.list_claimable_campaigns(now)
-    user_claimed_map = CouponService.claimed_counts(current_user.id, active_campaigns)
+    visible_campaigns = CouponService.list_user_visible_campaigns(now)
+    user_claimed_map = CouponService.claimed_counts(
+        current_user.id,
+        visible_campaigns,
+    )
+    reserved_campaign_ids = ReservationService.campaign_ids_for_user(current_user.id)
 
-    recommendations = ai_gateway.recommend_coupons(current_user, active_campaigns)
+    recommendations = ai_gateway.recommend_coupons(current_user, visible_campaigns)
+    recommended_ids = {
+        recommendation["campaign"].id for recommendation in recommendations
+    }
+    for campaign in visible_campaigns:
+        if campaign.id not in recommended_ids:
+            recommendations.append(
+                {
+                    "campaign": campaign,
+                    "reason": "即将开始，先预约收藏" if campaign.is_pending_release_at(now) else "为您精选推荐",
+                    "score": 0.5,
+                }
+            )
+
     for recommendation in recommendations:
-        campaign_id = recommendation["campaign"].id
+        campaign = recommendation["campaign"]
+        campaign_id = campaign.id
         recommendation["is_maxed"] = (
-            user_claimed_map.get(campaign_id, 0)
-            >= recommendation["campaign"].per_user_limit
+            user_claimed_map.get(campaign_id, 0) >= campaign.per_user_limit
         )
         recommendation["user_claimed"] = user_claimed_map.get(campaign_id, 0)
+        recommendation["is_pending"] = campaign.is_pending_release_at(now)
+        recommendation["is_reserved"] = campaign_id in reserved_campaign_ids
 
     ai_picks = [item for item in recommendations if item["score"] >= 0.6]
     ai_pick_ids = {item["campaign"].id for item in ai_picks}
@@ -62,6 +82,21 @@ def claim_coupon(campaign_id):
         success=True,
         message=f'领取成功！{result["reason"]}',
         **result,
+    )
+
+
+@user_bp.route("/reserve/<int:campaign_id>", methods=["POST"])
+def reserve_campaign(campaign_id):
+    try:
+        result = ReservationService.reserve(campaign_id, current_user.id)
+    except ReservationError as error:
+        return jsonify(error.to_dict()), error.status_code
+    message = "预约成功，已为您收藏。" if result["created"] else "您已预约过该活动。"
+    return jsonify(
+        success=True,
+        message=message,
+        reserved=True,
+        already_reserved=not result["created"],
     )
 
 
